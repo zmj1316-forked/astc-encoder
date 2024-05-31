@@ -38,8 +38,6 @@ static constexpr uint32_t ASTCENC_BYTES_PER_BLOCK = 16;
 
 template<typename T> T sqr(T v) { return v * v; }
 
-extern "C" void progress_emitter(float value);
-
 extern "C" void rdo_progress_emitter(
 	float value
 ) {
@@ -52,7 +50,27 @@ extern "C" void rdo_progress_emitter(
 	}
 	previous_value = value;
 
-	progress_emitter(value);
+	const unsigned int bar_size = 25;
+	unsigned int parts = static_cast<int>(value / 4.0f);
+
+	char buffer[bar_size + 3];
+	buffer[0] = '[';
+
+	for (unsigned int i = 0; i < parts; i++)
+	{
+		buffer[i + 1] = '=';
+	}
+
+	for (unsigned int i = parts; i < bar_size; i++)
+	{
+		buffer[i + 1] = ' ';
+	}
+
+	buffer[bar_size + 1] = ']';
+	buffer[bar_size + 2] = '\0';
+
+	printf("    Progress: %s %03.1f%%\r", buffer, static_cast<double>(value));
+	fflush(stdout);
 }
 
 static uint32_t init_rdo_context(
@@ -422,7 +440,7 @@ void rate_distortion_optimize(
 		ert::reduce_entropy(buffer + base * ASTCENC_BYTES_PER_BLOCK, count,
 							ASTCENC_BYTES_PER_BLOCK, ASTCENC_BYTES_PER_BLOCK,
 							ctx.rdo_context->m_ert_params, total_modified,
-							compute_block_difference, &local_ctx);
+							&compute_block_difference, &local_ctx);
 
 		ctxo.manage_rdo.complete_task_assignment(count);
 	}
